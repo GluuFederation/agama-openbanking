@@ -218,10 +218,10 @@ Support for the final TPP/request-object integration is part of the subsequent i
 
 # Sequence Diagram
 
-The following diagram shows the current Phase 1 consent integration and the planned authorization integration.
+The following diagram shows the current  consent integration and the planned authorization integration.
 
 ```mermaid
-[sequenceDiagram
+sequenceDiagram
     actor User
     participant TPP
     participant Jans as Jans Auth Server
@@ -246,7 +246,7 @@ The following diagram shows the current Phase 1 consent integration and the plan
         Jans-->>TPP: Authorization Code
     else Consent is invalid
         Agama-->>User: Display Error
-    end]
+    end
 ```
 
 ---
