@@ -222,31 +222,70 @@ The following diagram shows the current  consent integration and the planned aut
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant TPP
-    participant Jans as Jans Auth Server
-    participant Agama as Agama Flow
-    participant Consent as Open Banking Consent Engine
+title TPP->First Party Mobile App 
+autonumber 
 
-    TPP->>Consent: Create Account Access Consent
-    Consent-->>TPP: ConsentId
+participantgroup #lightblue **Mobile Device** 
+tpp->tpp: Generate request object (RO) with OBIE Keys
+tpp->app: Invoke Hybrid flow & RO using tpp2app redirection
+end
 
-    TPP->>Jans: Authorization Request
-    Note over TPP,Jans: intent_id / Request Object
+participantgroup #lightgreen **Gluu Flex** 
+app->Auth Server: App acts as UserAgent. Invoke /authz - Send RO Request\nacr = urn:openbanking:psd2:sca\nif acr = urn:openbanking:psd2:ca ... route to above 
+Auth Server->Auth Server: Validate request and Request Object
 
-    Jans->>Agama: Start Open Banking Agama Flow
+alt RO & Authorise Request Invalid 
+Auth Server-> app: Return to APP with standard OIDC errors
+app->app: Render the Error on Screen
+end
 
-    Agama->>Consent: Validate ConsentId
-    Consent-->>Agama: Consent Status
+Auth Server->Agama flow: Invoke flow: \nurn:openbanking:psd2.sca
+end
 
-    alt Consent is AwaitingAuthorisation
-        Agama->>User: Authenticate / Authorize
-        User-->>Agama: Authorization
-        Agama-->>Jans: Authentication Success
-        Jans-->>TPP: Authorization Code
-    else Consent is invalid
-        Agama-->>User: Display Error
-    end
+participantgroup #lightgrey **Core Systems** 
+Agama flow<->Consent Engine: Check consent status \n Awaiting Authorise? & \n Type (account/payment)
+
+alt Consent Invalid State 
+Agama flow-> app: Return to APP error display
+app->app: Render the error on screen
+end
+Agama flow-> app: RFAC: Return signed JWS (Payload Consent Object) with callbacks to continue SCA/Login
+
+app<->First Party IDP: Try User authentication
+alt User AuthN Failed or Account locked etc
+app->app: Render the error on screen
+end
+
+app<->Consent Engine: Load Consent Screen with Accounts
+app->app: Display Consent Screen to User
+
+alt Consent Invalid State 
+app->app: Render the error on screen
+end
+
+app->Consent Engine: return consent (Approve or Reject)
+
+alt Consent Rejected by User 
+app->Agama flow: Return JWS (signed by 1st party IDP) to Callback with ConsentID\nor error if customer rejected consent
+Agama flow<->Consent Engine: Check consent status \n Rejected? & \n Type (account/payment) & UserId
+Agama flow-> app: Return Failure to Consent
+app->tpp: Start app2tpp flow
+tpp->tpp: Display Error to Customer
+end
+
+app->Agama flow: Return to Agama Callback with success and JWS ( ConsentID & type of Authentication Perfomed)
+Agama flow<->Consent Engine: Check consent status \n Authorised? & \n Type (account/payment) & UserId
+
+Agama flow->Auth Server: Return ConsentId, AuthType, Success
+Auth Server->Auth Server: Prepare code, ID_token,Redirection URL as per hybrid flow
+Auth Server->app:app: Return code, ID_Token and Redirection URL
+app->tpp: Trigger app2tpp flow with code, ID_Token and Redirection URL
+
+tpp<->Auth Server: Code exchange to get Access, ID & Refresh Tokens as per the scopes
+tpp-> Resource APIs: Invoke Accounts or Payments APIs with access token
+
+
+end
 ```
 
 ---
