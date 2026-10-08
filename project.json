@@ -1,0 +1,31 @@
+{
+    "projectName": "open-banking",
+    "description": "Open banking authorization sample flow",
+    "type": "community",
+    "author": "GluuFederation",
+    "version": "1.0.0",
+    "authorWebsite": "https://github.com/GluuFederation/agama-openbanking",
+    "githubUri": "https://github.com/GluuFederation/agama-openbanking",
+    "license": "apache-2.0",
+    "lastUpdated": "1758300130664",
+    "tags": [
+        "authorization",
+        "openid-connect",
+        "jans"
+    ],
+    "noDirectLaunch": [],
+    "configs": {
+        "urn.openbanking.psd2.sca": {
+            "consentEngineBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+            "rfacAppUrl": "<RFAC_APP_URL>",
+            "testCreateConsent": "<true|false>",
+            "testConsentApiKey": "<>",
+            "testConsentAccessToken": "<>",
+            "consentApiBasicAuth": "<>",
+            "isConsentCertPath": "<true|false>",
+            "consentCertPath": "<>"
+        },
+        "": {}
+    },
+    "name": "open-banking"
+}

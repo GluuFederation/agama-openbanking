@@ -1,0 +1,51 @@
+Flow urn.openbanking.psd2.sca
+     Basepath ""
+     Configs config
+// Flow starting
+Log "@info Start executing Openbanking flow..."
+// Feedback message
+feedback = {}
+// Max repeate
+Repeat 1 times max
+     // Invoked validation service
+     Log "@info Invoked validation service"
+     // Create an instance of OpenBanking Consent Service 
+     openBankingConsentService = Call org.gluu.agama.openbanking.OpenbankingConsentService#getInstance config
+     // Validate consent with Consent Engine (8)
+     validationResult = Call openBankingConsentService validateConsent 
+     // If Consent Id is valid
+     When validationResult.valid is true
+          // Valid message
+          Log "@info Initial Consent status is valid"
+          // Prepare RFAC response payload   (11)
+          rfacResponsePayload = Call openBankingConsentService prepareRfacRespPayload 
+          // Creating APP  (RFAC) URL
+          rfacUrl = Call openBankingConsentService buildRfacUrl rfacResponsePayload
+          // Making RFAC call
+          Log "@info Making RFAC call to external app. URL is : %"  rfacUrl
+          // App Response
+          resultFromApp = RFAC rfacUrl
+          // Verify apps returned result
+          Log "@info Verify external app return result"
+          // Verify final status
+          verifyFinalStatus = Call openBankingConsentService verifyExternalAppResult resultFromApp
+          // Checking final staus
+          When verifyFinalStatus.valid is true
+               // Final verification done
+               Log "@info Final verification successfully done"
+               // Declar return parameters 
+               consentId = verifyFinalStatus.openbanking_intent_id
+               acr = verifyFinalStatus.acr_values
+               status = verifyFinalStatus.status
+               userId = verifyFinalStatus.userId
+               // Return ConsentId, AuthType, Success
+               it_iadmz = {success:true, data: {userId: userId, consentId: consentId, status: status, acr: acr}}
+               Finish it_iadmz
+          Otherwise
+               // Verification failed
+               Log "@info Varification faild reason: %" verifyFinalStatus.message
+     Otherwise
+          // Not valid message
+          Log "@info Validation failed due to %"  validationResult.message
+          // Error message
+          feedback.errorMessage = validationResult.message
