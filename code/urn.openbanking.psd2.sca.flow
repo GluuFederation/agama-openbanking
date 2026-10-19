@@ -39,8 +39,8 @@ Repeat 1 times max
                status = verifyFinalStatus.status
                userId = verifyFinalStatus.userId
                // Return ConsentId, AuthType, Success
-               it_ocwvl = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}}
-               Finish it_ocwvl
+               it_igbdg = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}}
+               Finish it_igbdg
           Otherwise
                // Verification failed
                Log "@info Varification faild reason: %" verifyFinalStatus.message
