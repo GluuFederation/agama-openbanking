@@ -20,14 +20,18 @@
 					"isTopLevelFlow": true,
 					"basepath": "",
 					"configParams": {
-						"consentEngineBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+						"consentBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+						"consentBasePath": "/internal/api/",
 						"rfacAppUrl": "<RFAC_APP_URL>",
-						"testCreateConsent": "<true|false>",
-						"testConsentApiKey": "<>",
-						"testConsentAccessToken": "<>",
+						"consentApiKey": "<>",
+						"consentAccessToken": "<>",
+						"consentApiAuthToken": "<>",
 						"consentApiBasicAuth": "<>",
-						"isConsentCertPath": "<true|false>",
-						"consentCertPath": "<>"
+						"OutJwTSignPrivateKey": "<PRIVATE_KEY>",
+						"InJwTSignPublicKey": "<PUBLIC_KEY>",
+						"consentStatusForAuthorise": "Awaiting_Authorisation",
+						"consentStatusForApproved": "Authorised",
+						"consentStatusFailures": "Rejected, Revoked"
 					},
 					"nodeIcon": "material-symbols:line-start-square",
 					"timeout": "",
@@ -44,7 +48,7 @@
 				"width": 170,
 				"height": 124
 			},
-			"selected": false,
+			"selected": true,
 			"dragging": false
 		},
 		{
@@ -742,7 +746,7 @@
 				"width": 170,
 				"height": 124
 			},
-			"selected": true
+			"selected": false
 		},
 		{
 			"id": "assignmentNode-05d2cf7a-974e-4639-8c08-6f462f8f4c9c",
@@ -1251,8 +1255,8 @@
 		}
 	],
 	"viewport": {
-		"x": -2762,
-		"y": -508,
+		"x": 223,
+		"y": 218,
 		"zoom": 1
 	}
 }
