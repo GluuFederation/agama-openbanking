@@ -3,7 +3,7 @@
     "description": "Open banking authorization sample flow",
     "type": "community",
     "author": "GluuFederation",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "authorWebsite": "https://github.com/GluuFederation/agama-openbanking",
     "githubUri": "https://github.com/GluuFederation/agama-openbanking",
     "license": "apache-2.0",
