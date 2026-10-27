@@ -24,7 +24,7 @@
             "consentApiAuthToken": "<>",
             "consentApiBasicAuth": "<>",
             "OutJwTSignKeyId": "<KEY_ID>",
-            "InJwTSignPublicKey": "<PUBLIC_KEY>",
+            "InJwTSignJwks": "<PUBLIC_JWKS_JSON_PATH>",
             "consentStatusForAuthorise": "AwaitingAuthorisation",
             "consentStatusForApproved": "Authorised",
             "consentStatusFailures": "Rejected, Revoked"
