@@ -78,8 +78,8 @@ Example configuration:
     "consentAccessToken": "<>",
     "consentApiAuthToken": "<>",
     "consentApiBasicAuth": "<>",
-    "OutJwTSignPrivateKey": "<PRIVATE_KEY>",
-    "InJwTSignPublicKey": "<PUBLIC_KEY>",
+    "OutJwTSignKeyId": "<PRIVATE_KEY_ID>",
+    "InJwTSignJwks": "<PPUBLIC_JWKS_JSON_PATH>",
     "consentStatusForAuthorise": "AwaitingAuthorisation",
     "consentStatusForApproved": "Authorised",
     "consentStatusFailures": "Rejected, Revoked"
@@ -93,12 +93,12 @@ Example configuration:
 | `consentBaseUrl` | Yes | Base URL of the Open Banking Consent Engine. |
 | `consentBasePath` | No | Optional base path used to construct the consent validation URL. If not configured or left blank, the default path `/internal-consent/consent/` is used. |
 | `rfacAppUrl` | Yes | URL of the RFAC application used during the Open Banking authorization flow. |
-| `consentApiKey` | Conditional | API key used when communicating with the Consent Engine API, if required by the environment. |
-| `consentAccessToken` | Conditional | Access token used to authenticate requests to the Consent Engine API, if required by the environment. |
-| `consentApiAuthToken` | Conditional | Authentication token used when communicating with the Consent Engine API, if required by the environment. |
-| `consentApiBasicAuth` | Conditional | Basic authentication credential used when communicating with the Consent Engine API, if required by the environment. |
-| `OutJwTSignPrivateKey` | Conditional | Private key used to sign outgoing JWTs. |
-| `InJwTSignPublicKey` | Conditional | Public key used to verify incoming JWT signatures. |
+| `consentApiKey` | Yes | API key used when communicating with the Consent Engine API, if required by the environment. |
+| `consentAccessToken` | Yes | Access token used to authenticate requests to the Consent Engine API, if required by the environment. |
+| `consentApiAuthToken` | Yes | Authentication token used when communicating with the Consent Engine API, if required by the environment. |
+| `consentApiBasicAuth` | Yes | Basic authentication credential used when communicating with the Consent Engine API, if required by the environment. |
+| `OutJwTSignKeyId` | Yes | Private key ID to sign outgoing JWTs. |
+| `InJwTSignJwks` | Yes | Public JWKS JSON Path used to verify incoming JWT signatures. ie. `/opt/jans/jetty/jans-auth/custom/test_jwks.json` |
 | `consentStatusForAuthorise` | Yes | Consent status indicating that the consent is awaiting authorization. Defaults to `AwaitingAuthorisation` in the example configuration. |
 | `consentStatusForApproved` | Yes | Consent status indicating that the consent has been authorized. Defaults to `Authorised` in the example configuration. |
 | `consentStatusFailures` | Yes | Comma-separated list of consent statuses considered failures, such as `Rejected` and `Revoked`. |
