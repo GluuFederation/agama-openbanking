@@ -315,35 +315,6 @@ Verify:
 
 ---
 
-# Development
-
-The project can be developed and visualized using **Agama Lab**.
-
-A typical development workflow is:
-
-```text
-Agama Lab
-    |
-    | Design / Modify
-    v
-Agama Project
-    |
-    | Export / Build
-    v
-.gama Package
-    |
-    | Deploy
-    v
-Janssen Server
-    |
-    | Test
-    v
-Open Banking Environment
-```
-
-When modifying the flow, update the corresponding project configuration and test the complete authorization journey before releasing a new version.
-
----
 
 # Customize The Project
 
