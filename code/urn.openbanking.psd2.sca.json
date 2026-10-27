@@ -27,7 +27,7 @@
 						"consentAccessToken": "<>",
 						"consentApiAuthToken": "<>",
 						"consentApiBasicAuth": "<>",
-						"OutJwTSignPrivateKey": "<PRIVATE_KEY>",
+						"OutJwTSignKeyId": "<KEY_ID>",
 						"InJwTSignPublicKey": "<PUBLIC_KEY>",
 						"consentStatusForAuthorise": "AwaitingAuthorisation",
 						"consentStatusForApproved": "Authorised",
@@ -1255,8 +1255,8 @@
 		}
 	],
 	"viewport": {
-		"x": 223,
-		"y": 218,
+		"x": 0,
+		"y": 0,
 		"zoom": 1
 	}
 }
