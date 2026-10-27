@@ -16,14 +16,18 @@
     "noDirectLaunch": [],
     "configs": {
         "urn.openbanking.psd2.sca": {
-            "consentEngineBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+            "consentBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+            "consentBasePath": "/internal/api/",
             "rfacAppUrl": "<RFAC_APP_URL>",
-            "testCreateConsent": "<true|false>",
-            "testConsentApiKey": "<>",
-            "testConsentAccessToken": "<>",
+            "consentApiKey": "<>",
+            "consentAccessToken": "<>",
+            "consentApiAuthToken": "<>",
             "consentApiBasicAuth": "<>",
-            "isConsentCertPath": "<true|false>",
-            "consentCertPath": "<>"
+            "OutJwTSignKeyId": "<KEY_ID>",
+            "InJwTSignJwks": "<PUBLIC_JWKS_JSON_PATH>",
+            "consentStatusForAuthorise": "AwaitingAuthorisation",
+            "consentStatusForApproved": "Authorised",
+            "consentStatusFailures": "Rejected, Revoked"
         },
         "": {}
     },

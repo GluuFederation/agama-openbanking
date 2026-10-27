@@ -20,14 +20,18 @@
 					"isTopLevelFlow": true,
 					"basepath": "",
 					"configParams": {
-						"consentEngineBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+						"consentBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+						"consentBasePath": "/internal/api/",
 						"rfacAppUrl": "<RFAC_APP_URL>",
-						"testCreateConsent": "<true|false>",
-						"testConsentApiKey": "<>",
-						"testConsentAccessToken": "<>",
+						"consentApiKey": "<>",
+						"consentAccessToken": "<>",
+						"consentApiAuthToken": "<>",
 						"consentApiBasicAuth": "<>",
-						"isConsentCertPath": "<true|false>",
-						"consentCertPath": "<>"
+						"OutJwTSignKeyId": "<KEY_ID>",
+						"InJwTSignJwks": "<PUBLIC_JWKS_JSON_PATH>",
+						"consentStatusForAuthorise": "AwaitingAuthorisation",
+						"consentStatusForApproved": "Authorised",
+						"consentStatusFailures": "Rejected, Revoked"
 					},
 					"nodeIcon": "material-symbols:line-start-square",
 					"timeout": "",
@@ -733,7 +737,7 @@
 					"hasComment": true,
 					"comment": "Return ConsentId, AuthType, Success",
 					"flowfilename": "",
-					"returnVariable": "{userId: userId, consentId: consentId, status: status, acr: acr}",
+					"returnVariable": "{userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}",
 					"finishMode": "withSuccess",
 					"nodeIcon": "material-symbols:line-end-square-rounded"
 				}
