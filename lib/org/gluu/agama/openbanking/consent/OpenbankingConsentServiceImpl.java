@@ -50,6 +50,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.io.*;
 import java.util.Base64;
+import java.util.function.Supplier;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -166,24 +167,6 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         return flowConfig != null && "true".equalsIgnoreCase((String) flowConfig.get("isConsentCertPath"));
     }
 
-    private String consentBasePathStr(){
-        String consentBasePath = (String)flowConfig.get("consentBasePath");
-
-        if(consentBasePath !=null && !consentBasePath.isBlank()){
-            String normalizedBasePath = consentBasePath.trim();
-            if (!normalizedBasePath.startsWith("/")) {
-                normalizedBasePath = "/" + normalizedBasePath;
-            }
-            if (!normalizedBasePath.endsWith("/")) {
-                normalizedBasePath += "/";
-            }
-
-            return normalizedBasePath;
-        }else{
-            return "";
-        }
-    }
-
     private String requireConfig(String key) {
         String value = flowConfig != null ? (String) flowConfig.get(key) : null;
         if (value == null || value.isBlank()) {
@@ -193,8 +176,8 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
     }
 
     /**
-     * Initial check: the Consent Engine must report AwaitingAuthorisation
-     * before Agama starts the RFAC journey.
+     * Initial check: compare the Consent Engine status with the configured
+     * consentStatusForAuthorise value before starting the RFAC journey.
      */
     private boolean isAwaitingAuthorisation(String consentId) {
         try {
@@ -205,13 +188,11 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             LogUtils.log("Exception while checking initial consent status: %", e);
             return false;
         }
-            
     }
 
     /**
      * Final check, independent of the App's self-reported callback status:
-     * the Consent Engine must report Authorised. Never conflate this with
-     * isAwaitingAuthorisation — they check different states.
+     * compare the Consent Engine status with the configured approved status.
      */
     private boolean isFinalAuthorised(String consentId) {
         try {
@@ -232,6 +213,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             return false;
         }
     }
+
     /**
      * Checks the comma-separated consentStatusFailures configuration value.
      * This is used for classification/logging; any status other than the
@@ -253,21 +235,30 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         return false;
     }
 
-
     private String fetchConsentStatus(String consentId) throws Exception {
         LogUtils.log("OPEN_BANKING: Fetching consent status for consentId: %", consentId);
         String authenticationToken = requireConfig("consentApiAuthToken");
         String basicAuthHeader = requireConfig("consentApiBasicAuth");
         // Optional path prefix allows deployments to expose the Consent Engine
         // behind an API gateway. If absent/blank, preserve the legacy URL path.
-        String validationUrl ;
-        String consentBasePath = consentBasePathStr();
-        if(!consentBasePath.isEmpty()){
-            validationUrl = this.CONSENT_ENGINE_BASE_URL + consentBasePath + consentId;
-        }else{
-            validationUrl = this.CONSENT_ENGINE_BASE_URL + "/internal-consent/consent/" + consentId;
-        }       
-        LogUtils.log("VALIDATON URL: %", validationUrl);
+        String consentBasePath = flowConfig != null
+                ? (String) flowConfig.get("consentBasePath")
+                : null;
+        String validationPath;
+        if (consentBasePath != null && !consentBasePath.isBlank()) {
+            String normalizedBasePath = consentBasePath.trim();
+            if (!normalizedBasePath.startsWith("/")) {
+                normalizedBasePath = "/" + normalizedBasePath;
+            }
+            if (!normalizedBasePath.endsWith("/")) {
+                normalizedBasePath += "/";
+            }
+            validationPath = normalizedBasePath + "internal-consent/consent/" + URLEncoder.encode(consentId, StandardCharsets.UTF_8);
+        } else {
+            validationPath = "/internal-consent/consent/" + URLEncoder.encode(consentId, StandardCharsets.UTF_8);
+        }
+        String validationUrl = this.CONSENT_ENGINE_BASE_URL + validationPath;
+
         // Create the appropriate HTTP client depending on whether
         // a custom consent certificate has been configured.
         HttpClient httpClient;
@@ -388,65 +379,59 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         return this.CLIENT_ID != null && this.CLIENT_ID.equals(callbackClientId);
     }
 
+    /**
+     * Verify the BankApp callback JWT using the BankApp/customer public key from the configured
+     * InJwTSignJwks JSON Web Key Set. This is intentionally separate
+     * from verifyJwt(), which verifies the incoming OAuth request object via
+     * the registered OAuth client's JWKS.
+     */
     private boolean verifyJwtForExternalApp(String rawjwt) {
         try {
-            if (rawjwt == null) return false;
-            rawjwt = rawjwt.trim();
-            rawjwt = java.net.URLDecoder.decode(rawjwt, StandardCharsets.UTF_8).trim();
-            rawjwt = rawjwt.replaceAll("[\\s\\uFEFF\\u200B]", "");
-            AbstractCryptoProvider cryptoprovider = CdiUtil.bean(AbstractCryptoProvider.class);
-            Jwt jwt = Jwt.parse(rawjwt);
-
-            String client_id = jwt.getClaims().getClaimAsString(CLIENT_ID_CLAIM);
-
-            ClientService clientservice = CdiUtil.bean(ClientService.class);
-            Client client = clientservice.getClient(client_id);
-            if (client == null) {
-                LogUtils.log("Jwt verification failed. Client with client_id : % not found", client_id);
+            if (rawjwt == null || rawjwt.isBlank()) {
+                LogUtils.log("Callback JWT is missing");
                 return false;
             }
 
-            if (!isTrustedCallbackClient(client_id)) {
-                LogUtils.log("Jwt verification failed. client_id : % is not the trusted signer for this flow execution", client_id);
+            String token = rawjwt.trim();
+            // The callback may arrive URL-encoded as a query parameter.
+            if (token.contains("%2E") || token.contains("%2e") || token.contains("%2F") || token.contains("%2f")) {
+                token = java.net.URLDecoder.decode(token, StandardCharsets.UTF_8);
+            }
+            token = token.replaceAll("[\\s\\uFEFF\\u200B]", "");
+
+            Jwt parsedJwt = Jwt.parse(token);
+            if (parsedJwt.getHeader().getSignatureAlgorithm() != SignatureAlgorithm.RS256) {
+                LogUtils.log("Callback JWT rejected: only RS256 is allowed");
                 return false;
             }
 
-            JSONObject jwks = CommonUtils.getJwks(client);
-            if (jwks == null) {
-                LogUtils.log("Jwt verification failed. Client : % has no jwks", client_id);
+            // InJwTSignJwks must be a JWKS JSON object containing the BankApp
+            // public key and a kid matching the callback JWT header.
+            JSONObject configuredJwks = new JSONObject(requireConfig("InJwTSignJwks"));
+            Supplier<JSONObject> jwksSupplier = () -> configuredJwks;
+            CryptoHelper.JwtVerificationResult verification = CryptoHelper.verifyJwt(
+                    token, jwksSupplier, new CryptoHelper.BlankSecretSupplier());
+            if (verification != CryptoHelper.JwtVerificationResult.JWT_VERIFICATION_SUCCESS) {
+                LogUtils.log("Callback JWT signature verification failed");
                 return false;
             }
 
-            final JwtHeader jwtheader = jwt.getHeader();
-            final String keyId = jwtheader.getKeyId();
-            final SignatureAlgorithm signatureAlg = jwtheader.getSignatureAlgorithm();
-
-            final String[] jwtParts = rawjwt.split("\\.");
-            if (jwtParts.length != 3) {
-                LogUtils.log("Invalid JWT format. Parts length: %", jwtParts.length);
-                return false;
-            }
-
-            final String signingInput = jwtParts[0].trim() + "." + jwtParts[1].trim();
-            final String encodedSignature = jwtParts[2].trim();
-
-            boolean signatureValid = cryptoprovider.verifySignature(signingInput, encodedSignature, keyId, jwks, null, signatureAlg);
-            if (!signatureValid) {
-                LogUtils.log("Jwt verification failed. Cryptographic provider failed to validate the jwt");
-                return false;
-            }
-
-            long exp = jwt.getClaims().toJsonObject().optLong("exp", -1L);
+            JSONObject claims = parsedJwt.getClaims().toJsonObject();
+            long exp = claims.optLong("exp", -1L);
             if (exp <= 0 || Instant.now().getEpochSecond() >= exp) {
-                LogUtils.log("Jwt verification failed. Callback token is missing exp or has expired");
+                LogUtils.log("Callback JWT rejected: missing or expired exp claim");
+                return false;
+            }
+            long iat = claims.optLong("iat", -1L);
+            if (iat > 0 && iat > Instant.now().getEpochSecond() + 60) {
+                LogUtils.log("Callback JWT rejected: iat is in the future");
                 return false;
             }
 
-            LogUtils.log("Jwt verification successful");
+            LogUtils.log("Callback JWT signature and expiry validated successfully");
             return true;
-
         } catch (Exception e) {
-            LogUtils.log("Exception during JWT verification: %", e.getMessage());
+            LogUtils.log("Exception during external App JWT verification: %", e.getMessage());
             return false;
         }
     }
@@ -454,17 +439,12 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
     @Override
     public String prepareRfacRespPayload() {
         try {
-            LogUtils.log("Preparing RFAC Response payload");
-
-            // Build Payload JSON using per-execution instance state. Note:
-            // this payload is the REQUEST sent to the App inviting it to
-            // collect a decision — it must not pre-assert a consent_status,
-            // since Agama hasn't received a decision yet.
+            LogUtils.log("Preparing RFAC request payload");
             JSONObject payload = new JSONObject();
-            long now = System.currentTimeMillis() / 1000L; // Unix timestamp in seconds
+            long now = Instant.now().getEpochSecond();
             payload.put("iss", this.SERVER_BASE_URL);
             payload.put("iat", now);
-            payload.put("exp", now + 300); // expires in 5 minutes
+            payload.put("exp", now + 300); // 5 minutes
             payload.put("openbanking_intent_id", OPENBANKING_CONSENT_ID);
             payload.put("clientId", CLIENT_ID);
             payload.put("acr_values", ACR_VALUE);
@@ -472,54 +452,39 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             payload.put("aud", this.RFAC_APP_URL);
             payload.put("channel", "web|app");
 
-            // Get internal JWKS configuration
-            WebKeysConfiguration webKeysConfig = CdiUtil.bean(WebKeysConfiguration.class);
-            AbstractCryptoProvider cryptoProvider = CdiUtil.bean(AbstractCryptoProvider.class);
-
-            // Pick a valid signing key
-            SignatureAlgorithm algorithm = SignatureAlgorithm.RS256;
-            String keyId = null;
-            String use = Use.SIGNATURE;
-            String family = algorithm.getFamily().getValue();
-
-            for (JSONWebKey key : webKeysConfig.getKeys()) {
-                String keyUse = key.getUse();
-                String keyType = key.getKty();
-                if (use.equals(keyUse) && family.equals(keyType)) {
-                    LogUtils.log("Signing Key Id is: %", key.getKid());
-                    keyId = key.getKid();
-                    break;
-                }
-            }
-
-            if (keyId == null) {
-                LogUtils.log("No suitable signing key found in internal JWKS");
-                throw new RuntimeException("No suitable signing key found in internal JWKS");
-            }
-
-            JSONObject header = new JSONObject();
-            header.put("alg", algorithm.getName());
-            header.put("typ", "JWT");
-            header.put("kid", keyId);
-
-            String encodedHeader = Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
-            String encodedPayload = Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
-
-            String signingInput = encodedHeader + "." + encodedPayload;
-
-            String signature = cryptoProvider.sign(signingInput, keyId, null, algorithm);
-
-            String signedJws = signingInput + "." + signature;
-
-            LogUtils.log("RFAC JWS created successfully with internal key: %", keyId);
-            return signedJws;
-
+            // Outgoing JWT is signed with our configured private key.
+            String signedJwt = signJwtWithConfiguredKeyId(payload);
+            LogUtils.log("RFAC request JWT signed with Jans key ID from OutJwTSignKeyId");
+            return signedJwt;
         } catch (Exception e) {
-            LogUtils.log("Error while preparing RFAC payload : %", e);
+            LogUtils.log("Error while preparing/signing RFAC payload: %", e);
             return null;
         }
+    }
+
+    /**
+     * Signs the supplied claims with the Jans-managed private key identified by
+     * OutJwTSignKeyId. The key itself must already be available to the Jans
+     * AbstractCryptoProvider; this configuration value is a key ID (kid), not PEM.
+     */
+    private String signJwtWithConfiguredKeyId(JSONObject claims) throws Exception {
+        String keyId = requireConfig("OutJwTSignKeyId");
+        JwtSigningOptions options = JwtSigningOptions.of(keyId, SignatureAlgorithm.RS256);
+        return CryptoHelper.signJwt(claims, options);
+    }
+
+    /**
+     * Standalone sample for testing the configured outbound Jans signing key ID.
+     * This is not a separate protocol endpoint; it returns a signed test JWT.
+     */
+    public String sampleSignJwtWithConfiguredKeyId() throws Exception {
+        JSONObject sampleClaims = new JSONObject();
+        long now = Instant.now().getEpochSecond();
+        sampleClaims.put("iss", this.SERVER_BASE_URL);
+        sampleClaims.put("iat", now);
+        sampleClaims.put("exp", now + 300);
+        sampleClaims.put("sample", true);
+        return signJwtWithConfiguredKeyId(sampleClaims);
     }
 
     @Override
@@ -579,7 +544,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
                 validationResult.put("message", "External app result verify successful");
             } else {
                 validationResult.put("valid", false);
-                validationResult.put("message", "ConsentId is not in Authorised state");
+                validationResult.put("message", "ConsentId is not in the configured approved state");
             }
             return validationResult;
 
@@ -608,49 +573,6 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         return sis.getSessionId(CdiUtil.bean(HttpServletRequest.class));
     }
 
-    /**
-     * SAMPLE ONLY: signs a small RS256 JWT using the configured OutJwTSignPrivateKey.
-     *
-     * The key must be an unencrypted PKCS#8 PEM private key (BEGIN PRIVATE KEY),
-     * supplied as a multiline config value. This helper is intentionally not
-     * wired into the RFAC flow yet; it is a starting point for the later
-     * BankApp JWT-signing integration.
-     */
-    public String sampleSignJwtWithConfiguredPrivateKey() throws Exception {
-        String privateKeyPem = requireConfig("OutJwTSignPrivateKey");
-        String privateKeyBody = privateKeyPem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s", "");
-        byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBody);
-
-        java.security.KeyFactory keyFactory = java.security.KeyFactory.getInstance("RSA");
-        java.security.PrivateKey privateKey = keyFactory.generatePrivate(
-                new java.security.spec.PKCS8EncodedKeySpec(privateKeyBytes));
-
-        JSONObject header = new JSONObject();
-        header.put("alg", "RS256");
-        header.put("typ", "JWT");
-
-        JSONObject claims = new JSONObject();
-        long now = Instant.now().getEpochSecond();
-        claims.put("iss", this.SERVER_BASE_URL);
-        claims.put("iat", now);
-        claims.put("exp", now + 300);
-        claims.put("sample", true);
-
-        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
-        String encodedHeader = encoder.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
-        String encodedClaims = encoder.encodeToString(claims.toString().getBytes(StandardCharsets.UTF_8));
-        String signingInput = encodedHeader + "." + encodedClaims;
-
-        java.security.Signature signer = java.security.Signature.getInstance("SHA256withRSA");
-        signer.initSign(privateKey);
-        signer.update(signingInput.getBytes(StandardCharsets.US_ASCII));
-        String encodedSignature = encoder.encodeToString(signer.sign());
-
-        return signingInput + "." + encodedSignature;
-    }
 
     private HttpClient createConsentHttpClient() throws Exception {
         String certPath = requireConfig("consentCertPath");
@@ -701,4 +623,3 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
     }    
 
 }
-
