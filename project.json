@@ -23,7 +23,7 @@
             "consentAccessToken": "<>",
             "consentApiAuthToken": "<>",
             "consentApiBasicAuth": "<>",
-            "OutJwTSignPrivateKey": "<PRIVATE_KEY>",
+            "OutJwTSignKeyId": "<KEY_ID>",
             "InJwTSignPublicKey": "<PUBLIC_KEY>",
             "consentStatusForAuthorise": "AwaitingAuthorisation",
             "consentStatusForApproved": "Authorised",
