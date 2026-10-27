@@ -71,59 +71,37 @@ Example configuration:
 
 ```json
 {
-    "consentEngineBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+    "consentBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
+    "consentBasePath": "/internal/api/",
     "rfacAppUrl": "<RFAC_APP_URL>",
-    "testCreateConsent": "<true|false>",
-    "testConsentApiKey": "<>",
-    "testConsentAccessToken": "<>",
+    "consentApiKey": "<>",
+    "consentAccessToken": "<>",
+    "consentApiAuthToken": "<>",
     "consentApiBasicAuth": "<>",
-    "isConsentCertPath": "<true|false>",
-    "consentCertPath": "<>"
+    "OutJwTSignKeyId": "<PRIVATE_KEY_ID>",
+    "InJwTSignJwks": "<PPUBLIC_JWKS_JSON_PATH>",
+    "consentStatusForAuthorise": "AwaitingAuthorisation",
+    "consentStatusForApproved": "Authorised",
+    "consentStatusFailures": "Rejected, Revoked"
 }
 ```
 
 ## Configuration Parameters
 
-| Parameter                | Required    | Description                                                                                                                     |
-| ------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `consentEngineBaseUrl`   | Yes         | Base URL of the Open Banking Consent Engine.                                                                                    |
-| `rfacAppUrl`             | Yes         | URL of the RFAC application used during the Open Banking authorization flow.                                                    |
-| `testCreateConsent`      | Yes         | Enables or disables test consent creation. Set to `true` to create a consent through the configured Consent Engine API.         |
-| `testConsentApiKey`      | Conditional | API key used to create a test consent. Required when `testCreateConsent` is `true`.                                             |
-| `testConsentAccessToken` | Conditional | Bearer access token used to create a test consent. Required when `testCreateConsent` is `true`.                                 |
-| `consentApiBasicAuth`    | Conditional | Basic authentication credential used when communicating with the Consent Engine API, if required by the environment.            |
-| `isConsentCertPath`      | Yes         | Determines whether the flow should use a certificate from the configured certificate path for Consent Engine TLS communication. |
-| `consentCertPath`        | Conditional | Path to the Consent Engine certificate. Required when `isConsentCertPath` is `true`.                                            |
-
-### Example: Test Consent Creation Enabled
-
-```json
-{
-    "consentEngineBaseUrl": "https://consent.example.com",
-    "rfacAppUrl": "https://rfac.example.com",
-    "testCreateConsent": "true",
-    "testConsentApiKey": "YOUR_API_KEY",
-    "testConsentAccessToken": "YOUR_ACCESS_TOKEN",
-    "consentApiBasicAuth": "YOUR_BASIC_AUTH",
-    "isConsentCertPath": "true",
-    "consentCertPath": "/opt/jans/crts/consent-engine-cert.pem"
-}
-```
-
-### Example: Test Consent Creation Disabled
-
-```json
-{
-    "consentEngineBaseUrl": "https://consent.example.com",
-    "rfacAppUrl": "https://rfac.example.com",
-    "testCreateConsent": "false",
-    "testConsentApiKey": "",
-    "testConsentAccessToken": "",
-    "consentApiBasicAuth": "",
-    "isConsentCertPath": "false",
-    "consentCertPath": ""
-}
-```
+| Parameter | Required | Description |
+|---|---|---|
+| `consentBaseUrl` | Yes | Base URL of the Open Banking Consent Engine. |
+| `consentBasePath` | No | Optional base path used to construct the consent validation URL. If not configured or left blank, the default path `/internal-consent/consent/` is used. |
+| `rfacAppUrl` | Yes | URL of the RFAC application used during the Open Banking authorization flow. |
+| `consentApiKey` | Yes | API key used when communicating with the Consent Engine API, if required by the environment. |
+| `consentAccessToken` | Yes | Access token used to authenticate requests to the Consent Engine API, if required by the environment. |
+| `consentApiAuthToken` | Yes | Authentication token used when communicating with the Consent Engine API, if required by the environment. |
+| `consentApiBasicAuth` | Yes | Basic authentication credential used when communicating with the Consent Engine API, if required by the environment. |
+| `OutJwTSignKeyId` | Yes | Private key ID to sign outgoing JWTs. |
+| `InJwTSignJwks` | Yes | Public JWKS JSON Path used to verify incoming JWT signatures. ie. `/opt/jans/jetty/jans-auth/custom/test_jwks.json` |
+| `consentStatusForAuthorise` | Yes | Consent status indicating that the consent is awaiting authorization. Defaults to `AwaitingAuthorisation` in the example configuration. |
+| `consentStatusForApproved` | Yes | Consent status indicating that the consent has been authorized. Defaults to `Authorised` in the example configuration. |
+| `consentStatusFailures` | Yes | Comma-separated list of consent statuses considered failures, such as `Rejected` and `Revoked`. |
 
 ## Certificate Configuration
 
@@ -138,20 +116,20 @@ If the Consent Engine uses a self-signed certificate or a private CA, configure 
 
 When `isConsentCertPath` is `false`, the `consentCertPath` value is not used.
 
-
+or add your crt to java trust store.
 
 # Consent Validation
 
 After receiving the `ConsentId`, the flow validates the consent using:
 
 ```text
-GET /internal-consent/consent/{consentId}
+GET /internal-consent/api/{consentId}
 ```
 
 For example:
 
 ```text
-GET /internal-consent/consent/example-consent-id
+GET /internal-consent/api/example-consent-id
 ```
 
 The flow checks the returned consent status.
@@ -190,31 +168,6 @@ The authorization request needs to provide the Agama flow with the Open Banking 
 
 The Agama flow can then retrieve the intent ID and validate the corresponding consent.
 
-### OIDC Request Object
-
-The preferred Open Banking implementation may use an OIDC Request Object.
-
-In that approach, the authorization request contains a signed request object:
-
-```text
-TPP
- |
- | Authorization Request
- | + Request Object
- v
-Jans Auth Server
- |
- v
-Agama Flow
- |
- | Extract intent/consent information
- v
-Consent Engine
-```
-
-Support for the final TPP/request-object integration is part of the subsequent implementation work.
-
----
 
 # Sequence Diagram
 
@@ -362,35 +315,6 @@ Verify:
 
 ---
 
-# Development
-
-The project can be developed and visualized using **Agama Lab**.
-
-A typical development workflow is:
-
-```text
-Agama Lab
-    |
-    | Design / Modify
-    v
-Agama Project
-    |
-    | Export / Build
-    v
-.gama Package
-    |
-    | Deploy
-    v
-Janssen Server
-    |
-    | Test
-    v
-Open Banking Environment
-```
-
-When modifying the flow, update the corresponding project configuration and test the complete authorization journey before releasing a new version.
-
----
 
 # Customize The Project
 
