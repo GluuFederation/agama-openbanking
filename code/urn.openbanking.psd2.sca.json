@@ -21,11 +21,8 @@
 					"basepath": "",
 					"configParams": {
 						"consentBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
-						"consentBasePath": "/internal/api/",
+						"consentBasePath": "</internal/api/>",
 						"rfacAppUrl": "<RFAC_APP_URL>",
-						"consentApiKey": "<>",
-						"consentAccessToken": "<>",
-						"consentApiAuthToken": "<>",
 						"consentApiBasicAuth": "<>",
 						"algtype": "RSA",
 						"OutJwTSignKeyId": "<KEY_ID>",
