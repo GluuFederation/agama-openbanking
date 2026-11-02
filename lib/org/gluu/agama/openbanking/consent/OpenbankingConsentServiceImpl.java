@@ -238,7 +238,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
 
     private String fetchConsentStatus(String consentId) throws Exception {
         LogUtils.log("OPEN_BANKING: Fetching consent status for consentId: %", consentId);
-        String authenticationToken = requireConfig("consentApiAuthToken");
+        // String authenticationToken = requireConfig("consentApiAuthToken");
         String basicAuthHeader = requireConfig("consentApiBasicAuth");
         // Optional path prefix allows deployments to expose the Consent Engine
         // behind an API gateway. If absent/blank, preserve the legacy URL path.
@@ -278,7 +278,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(validationUrl))
                 .header("accept", "application/json")
-                .header("Authentication", "Bearer " + authenticationToken)
+                // .header("Authentication", "Bearer " + authenticationToken)
                 .header("Authorization", "Basic " + basicAuthHeader)
                 .GET()
                 .build();
