@@ -23,6 +23,7 @@
             "consentAccessToken": "<>",
             "consentApiAuthToken": "<>",
             "consentApiBasicAuth": "<>",
+            "algtype": "RSA",
             "OutJwTSignKeyId": "<KEY_ID>",
             "InJwTSignJwks": "<PUBLIC_JWKS_JSON_PATH>",
             "consentStatusForAuthorise": "AwaitingAuthorisation",
