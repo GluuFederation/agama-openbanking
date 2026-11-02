@@ -66,6 +66,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 // import com.nimbusds.jose.crypto.RSASSASigner;
 // import com.nimbusds.jose.jwk.RSAKey;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gluu.agama.openbanking.consent.CryptoHelper.*;
 
 import org.gluu.agama.openbanking.OpenbankingConsentService;
 
@@ -237,7 +238,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
 
     private String fetchConsentStatus(String consentId) throws Exception {
         LogUtils.log("OPEN_BANKING: Fetching consent status for consentId: %", consentId);
-        String authenticationToken = requireConfig("consentApiAuthToken");
+        // String authenticationToken = requireConfig("consentApiAuthToken");
         String basicAuthHeader = requireConfig("consentApiBasicAuth");
         // Optional path prefix allows deployments to expose the Consent Engine
         // behind an API gateway. If absent/blank, preserve the legacy URL path.
@@ -277,7 +278,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(validationUrl))
                 .header("accept", "application/json")
-                .header("Authentication", "Bearer " + authenticationToken)
+                // .header("Authentication", "Bearer " + authenticationToken)
                 .header("Authorization", "Basic " + basicAuthHeader)
                 .GET()
                 .build();
@@ -300,13 +301,13 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
                 .path("linkedConsent")
                 .path("Data")
                 .path("Status")
-                .asText(null);
+                .asText(null); 
     }
 
     private String extractOpenBankingIntentId(String rawjwt) {
         try {
             Jwt jwt = Jwt.parse(rawjwt);
-            // Navigate through nested claims structure
+            // Navigate through nested claims structure             nnn  nn nnnnnnnnnnnnnnnnnn n b bn   c
             JSONObject claims = jwt.getClaims().toJsonObject();
             // The attribute is nested like: claims -> userinfo -> openbanking_intent_id -> value
             JSONObject userInfo = claims.getJSONObject("claims")
@@ -409,7 +410,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             // public key and a kid matching the callback JWT header.
             JSONObject configuredJwks = new JSONObject(requireConfig("InJwTSignJwks"));
             Supplier<JSONObject> jwksSupplier = () -> configuredJwks;
-            CryptoHelper.JwtVerificationResult verification = CryptoHelper.verifyJwt(
+            JwtVerificationResult verification = CryptoHelper.verifyJwt(
                     token, jwksSupplier, new CryptoHelper.BlankSecretSupplier());
             if (verification != CryptoHelper.JwtVerificationResult.JWT_VERIFICATION_SUCCESS) {
                 LogUtils.log("Callback JWT signature verification failed");

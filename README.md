@@ -74,9 +74,6 @@ Example configuration:
     "consentBaseUrl": "<CONSENT_ENGINE_BASE_URL>",
     "consentBasePath": "/internal/api/",
     "rfacAppUrl": "<RFAC_APP_URL>",
-    "consentApiKey": "<>",
-    "consentAccessToken": "<>",
-    "consentApiAuthToken": "<>",
     "consentApiBasicAuth": "<>",
     "OutJwTSignKeyId": "<PRIVATE_KEY_ID>",
     "InJwTSignJwks": "<PPUBLIC_JWKS_JSON_PATH>",
@@ -93,9 +90,6 @@ Example configuration:
 | `consentBaseUrl` | Yes | Base URL of the Open Banking Consent Engine. |
 | `consentBasePath` | No | Optional base path used to construct the consent validation URL. If not configured or left blank, the default path `/internal-consent/consent/` is used. |
 | `rfacAppUrl` | Yes | URL of the RFAC application used during the Open Banking authorization flow. |
-| `consentApiKey` | Yes | API key used when communicating with the Consent Engine API, if required by the environment. |
-| `consentAccessToken` | Yes | Access token used to authenticate requests to the Consent Engine API, if required by the environment. |
-| `consentApiAuthToken` | Yes | Authentication token used when communicating with the Consent Engine API, if required by the environment. |
 | `consentApiBasicAuth` | Yes | Basic authentication credential used when communicating with the Consent Engine API, if required by the environment. |
 | `OutJwTSignKeyId` | Yes | Private key ID to sign outgoing JWTs. |
 | `InJwTSignJwks` | Yes | Public JWKS JSON Path used to verify incoming JWT signatures. ie. `/opt/jans/jetty/jans-auth/custom/test_jwks.json` |
