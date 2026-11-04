@@ -242,23 +242,28 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         String basicAuthHeader = requireConfig("consentApiBasicAuth");
         // Optional path prefix allows deployments to expose the Consent Engine
         // behind an API gateway. If absent/blank, preserve the legacy URL path.
-        String consentBasePath = flowConfig != null
-                ? (String) flowConfig.get("consentBasePath")
-                : null;
+        String consentBasePath = requireConfig("consentBasePath");
         String validationPath;
+
         if (consentBasePath != null && !consentBasePath.isBlank()) {
-            String normalizedBasePath = consentBasePath.trim();
-            if (!normalizedBasePath.startsWith("/")) {
-                normalizedBasePath = "/" + normalizedBasePath;
+            validationPath = consentBasePath.trim();
+
+            if (!validationPath.startsWith("/")) {
+                validationPath = "/" + validationPath;
             }
-            if (!normalizedBasePath.endsWith("/")) {
-                normalizedBasePath += "/";
-            }
-            validationPath = normalizedBasePath + "internal-consent/consent/" + URLEncoder.encode(consentId, StandardCharsets.UTF_8);
         } else {
-            validationPath = "/internal-consent/consent/" + URLEncoder.encode(consentId, StandardCharsets.UTF_8);
+            validationPath = "/internal-consent/consent/";
         }
+
+        if (!validationPath.endsWith("/")) {
+            validationPath += "/";
+        }
+
+        validationPath += URLEncoder.encode(consentId, StandardCharsets.UTF_8);
+
         String validationUrl = this.CONSENT_ENGINE_BASE_URL + validationPath;
+
+        
 
         // Create the appropriate HTTP client depending on whether
         // a custom consent certificate has been configured.
@@ -307,7 +312,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
     private String extractOpenBankingIntentId(String rawjwt) {
         try {
             Jwt jwt = Jwt.parse(rawjwt);
-            // Navigate through nested claims structure 
+            // Navigate through nested claims structure
             JSONObject claims = jwt.getClaims().toJsonObject();
             // The attribute is nested like: claims -> userinfo -> openbanking_intent_id -> value
             JSONObject userInfo = claims.getJSONObject("claims")
