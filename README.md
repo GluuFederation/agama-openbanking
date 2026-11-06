@@ -309,6 +309,29 @@ Verify:
 
 ---
 
+## `JWT Parameter Handling`
+
+The Agama flow uses different request parameters to receive JWTs depending on the stage of the authentication process.
+
+### 1. Initial Agama Flow Invocation
+
+When invoking the Agama flow, the JWT must be passed through the `request` query parameter.
+
+```text
+request=<JWT>
+```
+
+### 2. RFAC Callback to Agama
+
+When RFAC redirects or calls back to the Agama flow, the JWT must be passed through the `jws` query parameter.
+
+```text
+jws=<JWT>
+```
+
+
+**Note:** The parameter names are important and must be used as specified to ensure the Agama flow correctly handles the JWT at each stage.
+
 
 # Customize The Project
 
