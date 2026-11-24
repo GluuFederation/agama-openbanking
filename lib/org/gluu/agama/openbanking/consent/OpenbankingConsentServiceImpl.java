@@ -393,6 +393,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
      */
     private boolean verifyJwtForExternalApp(String rawjwt) {
         try {
+             // new version of code
             if (rawjwt == null || rawjwt.isBlank()) {
                 LogUtils.log("Callback JWT is missing");
                 return false;
@@ -435,7 +436,65 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             }
 
             LogUtils.log("Callback JWT signature and expiry validated successfully");
-            return true;
+            return true; // new version end
+
+            /* //Old version Start 
+            if (rawjwt == null) return false;
+            rawjwt = rawjwt.trim();
+            rawjwt = java.net.URLDecoder.decode(rawjwt, StandardCharsets.UTF_8).trim();
+            rawjwt = rawjwt.replaceAll("[\\s\\uFEFF\\u200B]", "");
+            AbstractCryptoProvider cryptoprovider = CdiUtil.bean(AbstractCryptoProvider.class);
+            Jwt jwt = Jwt.parse(rawjwt);
+
+            String client_id = jwt.getClaims().getClaimAsString(CLIENT_ID_CLAIM);
+
+            ClientService clientservice = CdiUtil.bean(ClientService.class);
+            Client client = clientservice.getClient(client_id);
+            if (client == null) {
+                LogUtils.log("Jwt verification failed. Client with client_id : % not found", client_id);
+                return false;
+            }
+
+            if (!isTrustedCallbackClient(client_id)) {
+                LogUtils.log("Jwt verification failed. client_id : % is not the trusted signer for this flow execution", client_id);
+                return false;
+            }
+
+            JSONObject jwks = CommonUtils.getJwks(client);
+            if (jwks == null) {
+                LogUtils.log("Jwt verification failed. Client : % has no jwks", client_id);
+                return false;
+            }
+
+            final JwtHeader jwtheader = jwt.getHeader();
+            final String keyId = jwtheader.getKeyId();
+            final SignatureAlgorithm signatureAlg = jwtheader.getSignatureAlgorithm();
+
+            final String[] jwtParts = rawjwt.split("\\.");
+            if (jwtParts.length != 3) {
+                LogUtils.log("Invalid JWT format. Parts length: %", jwtParts.length);
+                return false;
+            }
+
+            final String signingInput = jwtParts[0].trim() + "." + jwtParts[1].trim();
+            final String encodedSignature = jwtParts[2].trim();
+
+            boolean signatureValid = cryptoprovider.verifySignature(signingInput, encodedSignature, keyId, jwks, null, signatureAlg);
+            if (!signatureValid) {
+                LogUtils.log("Jwt verification failed. Cryptographic provider failed to validate the jwt");
+                return false;
+            }
+
+            long exp = jwt.getClaims().toJsonObject().optLong("exp", -1L);
+            if (exp <= 0 || Instant.now().getEpochSecond() >= exp) {
+                LogUtils.log("Jwt verification failed. Callback token is missing exp or has expired");
+                return false;
+            }
+
+            LogUtils.log("Jwt verification successful");
+            return true; // old version end */            
+
+
         } catch (Exception e) {
             LogUtils.log("Exception during external App JWT verification: %", e.getMessage());
             return false;
@@ -458,10 +517,59 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             payload.put("aud", this.RFAC_APP_URL);
             payload.put("channel", "web|app");
 
-            // Outgoing JWT is signed with our configured private key.
+            // new version of code Outgoing JWT is signed with our configured private key.
             String signedJwt = signJwtWithConfiguredKeyId(payload);
             LogUtils.log("RFAC request JWT signed with Jans key ID from OutJwTSignKeyId");
             return signedJwt;
+
+            /*
+            old version of code start
+             
+
+            String algType = requireConfig("algtype");
+            // Get internal JWKS configuration
+            WebKeysConfiguration webKeysConfig = CdiUtil.bean(WebKeysConfiguration.class);
+            AbstractCryptoProvider cryptoProvider = CdiUtil.bean(AbstractCryptoProvider.class);
+
+            // Pick a valid signing key
+            SignatureAlgorithm algorithm = SignatureAlgorithm.RS256;
+            String keyId = null;
+            String use = Use.SIGNATURE;
+            String family = algorithm.getFamily().getValue();
+
+            for (JSONWebKey key : webKeysConfig.getKeys()) {
+                String keyUse = key.getUse();
+                String keyType = key.getKty();
+                if (use.equals(keyUse) && family.equals(keyType)) {
+                    LogUtils.log("Signing Key Id is: %", key.getKid());
+                    keyId = key.getKid();
+                    break;
+                }
+            }
+
+            if (keyId == null) {
+                throw new RuntimeException("No suitable signing key found in internal JWKS");
+            }
+
+            JSONObject header = new JSONObject();
+            header.put("alg", algorithm.getName());
+            header.put("typ", "JWT");
+            header.put("kid", keyId);
+
+            String encodedHeader = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
+            String encodedPayload = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
+
+            String signingInput = encodedHeader + "." + encodedPayload;
+
+            String signature = cryptoProvider.sign(signingInput, keyId, null, algorithm);
+
+            String signedJws = signingInput + "." + signature;
+
+            LogUtils.log("RFAC JWS created successfully with internal key: %", keyId);
+            return signedJws; // old version end*/
+
         } catch (Exception e) {
             LogUtils.log("Error while preparing/signing RFAC payload: %", e);
             return null;
