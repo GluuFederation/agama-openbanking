@@ -20,7 +20,7 @@
             "consentBasePath": "</internal/api/>",
             "rfacAppUrl": "<RFAC_APP_URL>",
             "consentApiBasicAuth": "<>",
-            "algtype": "RSA",
+            "algtype": "RS256",
             "OutJwTSignKeyId": "<KEY_ID>",
             "InJwTSignJwks": "<PUBLIC_JWKS_JSON_PATH>",
             "consentStatusForAuthorise": "AwaitingAuthorisation",
