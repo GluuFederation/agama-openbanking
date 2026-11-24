@@ -39,12 +39,13 @@ Repeat 1 times max
                status = verifyFinalStatus.status
                userId = verifyFinalStatus.userId
                // Return ConsentId, AuthType, Success
-               it_ukjoi = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}}
-               Finish it_ukjoi
+               it_zryvq = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}}
+               Finish it_zryvq
           Otherwise
                // Verification failed
                Log "@info Varification faild reason: %" verifyFinalStatus.message
                feedback.errorMessage = verifyFinalStatus.message
+               RRF "error.ftlh" feedback
      Otherwise
           // Not valid message
           Log "@info Validation failed due to %"  validationResult.message
