@@ -24,7 +24,7 @@
 						"consentBasePath": "</internal/api/>",
 						"rfacAppUrl": "<RFAC_APP_URL>",
 						"consentApiBasicAuth": "<>",
-						"algtype": "RSA",
+						"algtype": "RS256",
 						"OutJwTSignKeyId": "<KEY_ID>",
 						"InJwTSignJwks": "<PUBLIC_JWKS_JSON_PATH>",
 						"consentStatusForAuthorise": "AwaitingAuthorisation",
@@ -46,7 +46,7 @@
 				"width": 170,
 				"height": 124
 			},
-			"selected": false,
+			"selected": true,
 			"dragging": false
 		},
 		{
@@ -1419,8 +1419,8 @@
 		}
 	],
 	"viewport": {
-		"x": -2845,
-		"y": -184,
+		"x": 3,
+		"y": 30,
 		"zoom": 1
 	}
 }
