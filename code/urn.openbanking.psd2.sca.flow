@@ -39,11 +39,12 @@ Repeat 1 times max
                status = verifyFinalStatus.status
                userId = verifyFinalStatus.userId
                // Return ConsentId, AuthType, Success
-               it_pppcm = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}}
-               Finish it_pppcm
+               it_lztmg = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}}
+               Finish it_lztmg
           Otherwise
                // Verification failed
                Log "@info Varification faild reason: %" verifyFinalStatus.message
+               feedback.errorMessage = verifyFinalStatus.message
      Otherwise
           // Not valid message
           Log "@info Validation failed due to %"  validationResult.message
