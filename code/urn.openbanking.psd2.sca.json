@@ -46,7 +46,7 @@
 				"width": 170,
 				"height": 124
 			},
-			"selected": true,
+			"selected": false,
 			"dragging": false
 		},
 		{
@@ -736,7 +736,7 @@
 					"hasComment": true,
 					"comment": "Return ConsentId, AuthType, Success",
 					"flowfilename": "",
-					"returnVariable": "{userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}",
+					"returnVariable": "{userId: userId, openbanking_intent_id: consentId, status: status, acr: acr, correlation_id: correlation_id}",
 					"finishMode": "withSuccess",
 					"nodeIcon": "material-symbols:line-end-square-rounded"
 				}
@@ -745,7 +745,8 @@
 				"width": 170,
 				"height": 124
 			},
-			"selected": false
+			"selected": true,
+			"dragging": false
 		},
 		{
 			"id": "assignmentNode-05d2cf7a-974e-4639-8c08-6f462f8f4c9c",
@@ -783,6 +784,11 @@
 							"variableTypeCheck": true,
 							"assignmentExpression": "verifyFinalStatus.userId",
 							"assignedVariableName": "userId"
+						},
+						{
+							"variableTypeCheck": true,
+							"assignmentExpression": "verifyFinalStatus.correlation_id",
+							"assignedVariableName": "correlation_id"
 						}
 					],
 					"nodeIcon": "material-symbols:equal",
@@ -1419,8 +1425,8 @@
 		}
 	],
 	"viewport": {
-		"x": 3,
-		"y": 30,
+		"x": -2360,
+		"y": -428,
 		"zoom": 1
 	}
 }
