@@ -82,7 +82,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
     private String OPENBANKING_CONSENT_ID;
     private String CLIENT_ID;
     private String ACR_VALUE;
-
+    private String CORELATION_ID;
     private String CONSENT_ENGINE_BASE_URL;
     private String RFAC_APP_URL;
     private HashMap<String, String> flowConfig;
@@ -143,6 +143,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
 
             this.OPENBANKING_CONSENT_ID = consentId;
             LogUtils.log("Extracted openbanking_consent_id: %", consentId);
+            this.CORELATION_ID = extractParamFromSession(rawjwt, "state"); // State use as a co-relation id
 
             boolean isValid = isAwaitingAuthorisation(consentId);
             if (isValid) {
@@ -324,6 +325,21 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
 
         } catch (Exception e) {
             LogUtils.log("Error extracting openbanking_intent_id: %", e);
+            return null;
+        }
+    }
+
+
+    private String extractParamFromSession(String rawjwt, String paramName) {
+        try {
+            Jwt jwt = Jwt.parse(rawjwt);
+            // Navigate through nested claims structure
+            JSONObject claims = jwt.getClaims().toJsonObject();
+            String value = claims.getString(paramName);
+            return value;
+
+        } catch (Exception e) {
+            LogUtils.log("Error extracting param: %", e);
             return null;
         }
     }
@@ -511,6 +527,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             payload.put("iat", now);
             payload.put("exp", now + 300); // 5 minutes
             payload.put("openbanking_intent_id", OPENBANKING_CONSENT_ID);
+            payload.put("correlation_id", CORELATION_ID);
             payload.put("clientId", CLIENT_ID);
             payload.put("acr_values", ACR_VALUE);
             payload.put("callback", this.SERVER_BASE_URL + "/jans-auth/fl/callback");
@@ -623,6 +640,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
             Map<String, String> extracted = extractAttributesFromAppJws(jws);
             String intentId = extracted.get("openbanking_intent_id");
             String userId = extracted.get("sub");
+            String correlationId = extracted.get("correlation_id");
 
             if (intentId == null) {
                 validationResult.put("valid", false);
@@ -645,6 +663,11 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
                 validationResult.put("message", "No verified user identity in callback");
                 return validationResult;
             }
+            if (correlationId == null || correlationId.isBlank() || !correlationId.equals(CORELATION_ID)) {
+                LogUtils.log("Callback JWT has missing or invalid correlation id claim");
+                validationResult.put("valid", false);
+                validationResult.put("message", "Missing or invalid correlation id in callback");
+            }
 
             // Final check is independent of the App's own self-reported
             // status claim — always re-check the Consent Engine directly.
@@ -655,6 +678,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
                 validationResult.put("acr_values", extracted.get("acr_values"));
                 validationResult.put("status", extracted.get("status"));
                 validationResult.put("userId", userId);
+                validationResult.put("correlation_id", correlationId);
                 validationResult.put("message", "External app result verify successful");
             } else {
                 validationResult.put("valid", false);
@@ -676,6 +700,7 @@ public class OpenbankingConsentServiceImpl extends OpenbankingConsentService {
         result.put("openbanking_intent_id", claims.optString("openbanking_intent_id", null));
         result.put("acr_values", claims.optString("acr_values", null));
         result.put("status", claims.optString("consent_status", null));
+        result.put("correlation_id", claims.optString("correlation_id", null));
         // Verified user identity, from the callback token's own subject
         // claim — never fall back to a fixed/default identity here.
         result.put("sub", claims.optString("sub", null));
