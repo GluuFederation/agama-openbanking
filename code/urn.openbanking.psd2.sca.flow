@@ -38,9 +38,10 @@ Repeat 1 times max
                acr = verifyFinalStatus.acr_values
                status = verifyFinalStatus.status
                userId = verifyFinalStatus.userId
+               correlation_id = verifyFinalStatus.correlation_id
                // Return ConsentId, AuthType, Success
-               it_foryw = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr}}
-               Finish it_foryw
+               it_kjudu = {success:true, data: {userId: userId, openbanking_intent_id: consentId, status: status, acr: acr, correlation_id: correlation_id}}
+               Finish it_kjudu
           Otherwise
                // Verification failed
                Log "@info Varification faild reason: %" verifyFinalStatus.message
